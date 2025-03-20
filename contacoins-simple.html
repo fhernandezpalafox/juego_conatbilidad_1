@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ContaCoins Simplificado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        .game-area {
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            height: 400px;
+            background: linear-gradient(to bottom, #87CEEB, #E0F7FA);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .player {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-color: #4F46E5;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .platform {
+            position: absolute;
+            background-color: #10B981;
+            border-radius: 4px;
+        }
+        
+        .coin {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: #FBBF24;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #92400E;
+        }
+        
+        .concept {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-color: #3B82F6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        .float {
+            animation: float 2s ease-in-out infinite;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 80%;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-indigo-700">ContaCoins: Aventura Contable</h1>
+            <p class="text-gray-600">¡Recolecta monedas y aprende conceptos de contabilidad!</p>
+        </div>
+        
+        <!-- Game Stats -->
+        <div class="flex justify-center gap-6 mb-4">
+            <div class="bg-white p-3 rounded-lg shadow-md">
+                <div class="flex items-center">
+                    <i class="fas fa-coins text-yellow-500 mr-2"></i>
+                    <div>
+                        <span class="text-sm text-gray-500">Monedas:</span>
+                        <span id="coin-counter" class="font-bold ml-1">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-3 rounded-lg shadow-md">
+                <div class="flex items-center">
+                    <i class="fas fa-book text-blue-500 mr-2"></i>
+                    <div>
+                        <span class="text-sm text-gray-500">Conceptos:</span>
+                        <span id="concept-counter" class="font-bold ml-1">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-3 rounded-lg shadow-md">
+                <div class="flex items-center">
+                    <i class="fas fa-heart text-red-500 mr-2"></i>
+                    <div>
+                        <span class="text-sm text-gray-500">Vidas:</span>
+                        <span id="lives-counter" class="font-bold ml-1">3</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Game Controls -->
+        <div class="bg-white p-4 rounded-lg shadow-md mb-4">
+            <h2 class="font-bold text-lg text-indigo-700 mb-2">Controles:</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div class="flex items-center bg-gray-50 p-2 rounded">
+                    <span class="bg-indigo-100 px-2 py-1 rounded mr-2">←</span>
+                    <span>Izquierda</span>
+                </div>
+                <div class="flex items-center bg-gray-50 p-2 rounded">
+                    <span class="bg-indigo-100 px-2 py-1 rounded mr-2">→</span>
+                    <span>Derecha</span>
+                </div>
+                <div class="flex items-center bg-gray-50 p-2 rounded">
+                    <span class="bg-indigo-100 px-2 py-1 rounded mr-2">↑</span>
+                    <span>Saltar</span>
+                </div>
+                <div class="flex items-center bg-gray-50 p-2 rounded">
+                    <span class="bg-indigo-100 px-2 py-1 rounded mr-2">R</span>
+                    <span>Reiniciar</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Game Area -->
+        <div id="game-area" class="game-area">
+            <div id="start-screen" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50">
+                <div class="text-center bg-white p-6 rounded-lg max-w-sm">
+                    <h2 class="text-2xl font-bold text-indigo-700 mb-4">¡Bienvenido a ContaCoins!</h2>
+                    <p class="mb-6 text-gray-700">Recolecta monedas y conceptos contables para aprender mientras juegas.</p>
+                    <button id="start-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                        ¡Comenzar!
+                    </button>
+                </div>
+            </div>
+            
+            <div id="player" class="player">
+                <i class="fas fa-user-tie"></i>
+            </div>
+        </div>
+        
+        <!-- Current Concept Panel -->
+        <div id="concept-panel" class="mt-4 bg-white rounded-lg shadow-md p-4 hidden">
+            <h3 class="font-bold text-lg text-indigo-700 mb-2">Concepto recolectado:</h3>
+            <div id="concept-content" class="bg-indigo-50 p-3 rounded-lg">
+                <h4 id="concept-title" class="font-bold text-indigo-900 mb-1"></h4>
+                <p id="concept-description" class="text-gray-700"></p>
+            </div>
+        </div>
+        
+        <!-- Game Over Modal -->
+        <div id="game-over-modal" class="modal">
+            <div class="modal-content">
+                <div class="text-center">
+                    <div class="text-4xl mb-4">😢</div>
+                    <h2 class="text-2xl font-bold text-red-600 mb-2">¡Juego Terminado!</h2>
+                    <p class="mb-4 text-gray-700">¡No te rindas! Inténtalo de nuevo para aprender más conceptos de contabilidad.</p>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <span class="text-gray-500">Monedas:</span>
+                                <span id="final-coins" class="font-bold ml-1 text-yellow-500"></span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Conceptos:</span>
+                                <span id="final-concepts" class="font-bold ml-1 text-blue-500"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button id="restart-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                        Jugar de nuevo
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Win Modal -->
+        <div id="win-modal" class="modal">
+            <div class="modal-content">
+                <div class="text-center">
+                    <div class="text-4xl mb-4">🎉</div>
+                    <h2 class="text-2xl font-bold text-green-600 mb-2">¡Nivel Completado!</h2>
+                    <p class="mb-4 text-gray-700">¡Felicidades! Has completado el nivel y has aprendido conceptos de contabilidad.</p>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <span class="text-gray-500">Monedas:</span>
+                                <span id="win-coins" class="font-bold ml-1 text-yellow-500"></span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Conceptos:</span>
+                                <span id="win-concepts" class="font-bold ml-1 text-blue-500"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button id="next-level-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                        Jugar de nuevo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Game elements
+        const gameArea = document.getElementById('game-area');
+        const player = document.getElementById('player');
+        const startScreen = document.getElementById('start-screen');
+        const startButton = document.getElementById('start-button');
+        const coinCounter = document.getElementById('coin-counter');
+        const conceptCounter = document.getElementById('concept-counter');
+        const livesCounter = document.getElementById('lives-counter');
+        const gameOverModal = document.getElementById('game-over-modal');
+        const winModal = document.getElementById('win-modal');
+        const restartButton = document.getElementById('restart-button');
+        const nextLevelButton = document.getElementById('next-level-button');
+        const finalCoins = document.getElementById('final-coins');
+        const finalConcepts = document.getElementById('final-concepts');
+        const winCoins = document.getElementById('win-coins');
+        const winConcepts = document.getElementById('win-concepts');
+        const conceptPanel = document.getElementById('concept-panel');
+        const conceptTitle = document.getElementById('concept-title');
+        const conceptDescription = document.getElementById('concept-description');
+        
+        // Game state
+        let gameRunning = false;
+        let playerX = 50;
+        let playerY = 50;
+        let playerWidth = 40;
+        let playerHeight = 40;
+        let playerSpeedX = 0;
+        let playerSpeedY = 0;
+        let playerOnGround = false;
+        let coins = 0;
+        let conceptsCollected = 0;
+        let lives = 3;
+        let keys = {};
+        let platforms = [];
+        let coinsArray = [];
+        let conceptsArray = [];
+        let animationId;
+        
+        // Accounting concepts
+        const accountingConcepts = [
+            {
+                title: "Activo",
+                description: "Recursos controlados por una entidad, como resultado de sucesos pasados, de los que se espera obtener beneficios económicos futuros."
+            },
+            {
+                title: "Pasivo",
+                description: "Obligaciones presentes de la empresa, surgidas de eventos pasados, que en el futuro deberán liquidarse."
+            },
+            {
+                title: "Patrimonio",
+                description: "Parte residual de los activos de la entidad, una vez deducidos todos sus pasivos. Representa lo que pertenece a los dueños."
+            },
+            {
+                title: "Partida Doble",
+                description: "Principio fundamental de la contabilidad que establece que cada transacción afecta al menos dos cuentas, manteniendo la ecuación: Activo = Pasivo + Patrimonio."
+            },
+            {
+                title: "Balance General",
+                description: "También llamado Estado de Situación Financiera. Muestra los activos, pasivos y patrimonio de una empresa en un momento específico."
+            }
+        ];
+        
+        // Game constants
+        const GRAVITY = 0.5;
+        const JUMP_FORCE = 12;
+        const MOVE_SPEED = 5;
+        const FRICTION = 0.85;
+        
+        // Setup keyboard controls
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            
+            // Restart game with 'r' key
+            if (e.key === 'r') {
+                restartGame();
+            }
+        });
+        
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+        
+        // Start button event
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', restartGame);
+        nextLevelButton.addEventListener('click', restartGame);
+        
+        // Initialize game
+        function initGame() {
+            // Reset game state
+            playerX = 50;
+            playerY = 50;
+            playerSpeedX = 0;
+            playerSpeedY = 0;
+            playerOnGround = false;
+            coins = 0;
+            conceptsCollected = 0;
+            lives = 3;
+            
+            // Update UI
+            coinCounter.textContent = coins;
+            conceptCounter.textContent = conceptsCollected;
+            livesCounter.textContent = lives;
+            
+            // Clear existing game elements
+            clearGameElements();
+            
+            // Create platforms
+            createPlatform(0, 350, 200, 20);
+            createPlatform(250, 320, 150, 20);
+            createPlatform(450, 280, 200, 20);
+            createPlatform(700, 320, 150, 20);
+            createPlatform(0, 380, 850, 20); // Floor
+            
+            // Create coins
+            createCoin(100, 310);
+            createCoin(300, 280);
+            createCoin(520, 240);
+            createCoin(750, 280);
+            
+            // Create concepts
+            createConcept(150, 310, 0);
+            createConcept(550, 240, 1);
+            
+            // Position player
+            updatePlayerPosition();
+        }
+        
+        function clearGameElements() {
+            // Remove all platforms, coins and concepts
+            platforms.forEach(platform => {
+                if (platform.element && platform.element.parentNode) {
+                    platform.element.parentNode.removeChild(platform.element);
+                }
+            });
+            
+            coinsArray.forEach(coin => {
+                if (coin.element && coin.element.parentNode) {
+                    coin.element.parentNode.removeChild(coin.element);
+                }
+            });
+            
+            conceptsArray.forEach(concept => {
+                if (concept.element && concept.element.parentNode) {
+                    concept.element.parentNode.removeChild(concept.element);
+                }
+            });
+            
+            platforms = [];
+            coinsArray = [];
+            conceptsArray = [];
+        }
+        
+        function createPlatform(x, y, width, height) {
+            const platformElement = document.createElement('div');
+            platformElement.className = 'platform';
+            platformElement.style.left = `${x}px`;
+            platformElement.style.top = `${y}px`;
+            platformElement.style.width = `${width}px`;
+            platformElement.style.height = `${height}px`;
+            gameArea.appendChild(platformElement);
+            
+            platforms.push({
+                element: platformElement,
+                x: x,
+                y: y,
+                width: width,
+                height: height
+            });
+        }
+        
+        function createCoin(x, y) {
+            const coinElement = document.createElement('div');
+            coinElement.className = 'coin float';
+            coinElement.style.left = `${x}px`;
+            coinElement.style.top = `${y}px`;
+            coinElement.innerHTML = '<i class="fas fa-dollar-sign"></i>';
+            gameArea.appendChild(coinElement);
+            
+            coinsArray.push({
+                element: coinElement,
+                x: x,
+                y: y,
+                width: 30,
+                height: 30,
+                collected: false
+            });
+        }
+        
+        function createConcept(x, y, conceptId) {
+            const conceptElement = document.createElement('div');
+            conceptElement.className = 'concept float';
+            conceptElement.style.left = `${x}px`;
+            conceptElement.style.top = `${y}px`;
+            conceptElement.innerHTML = '<i class="fas fa-book-open"></i>';
+            gameArea.appendChild(conceptElement);
+            
+            conceptsArray.push({
+                element: conceptElement,
+                x: x,
+                y: y,
+                width: 40,
+                height: 40,
+                collected: false,
+                conceptId: conceptId
+            });
+        }
+        
+        function startGame() {
+            startScreen.style.display = 'none';
+            gameRunning = true;
+            initGame();
+            gameLoop();
+        }
+        
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            // Handle player movement
+            updatePlayer();
+            
+            // Check for collisions
+            checkCollisions();
+            
+            // Check for win condition
+            if (playerX > 800) {
+                winGame();
+                return;
+            }
+            
+            // Continue the game loop
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function updatePlayer() {
+            // Apply gravity
+            playerSpeedY += GRAVITY;
+            
+            // Handle left/right movement
+            if (keys['ArrowLeft'] || keys['a']) {
+                playerSpeedX -= MOVE_SPEED;
+                player.innerHTML = '<i class="fas fa-user-tie fa-flip-horizontal"></i>';
+            }
+            
+            if (keys['ArrowRight'] || keys['d']) {
+                playerSpeedX += MOVE_SPEED;
+                player.innerHTML = '<i class="fas fa-user-tie"></i>';
+            }
+            
+            // Apply friction
+            playerSpeedX *= FRICTION;
+            
+            // Handle jumping
+            if ((keys['ArrowUp'] || keys[' '] || keys['w']) && playerOnGround) {
+                playerSpeedY = -JUMP_FORCE;
+                playerOnGround = false;
+            }
+            
+            // Prevent excessive speed
+            if (playerSpeedX > 10) playerSpeedX = 10;
+            if (playerSpeedX < -10) playerSpeedX = -10;
+            if (playerSpeedY > 15) playerSpeedY = 15;
+            
+            // Update position
+            playerX += playerSpeedX;
+            playerY += playerSpeedY;
+            
+            // Prevent going out of bounds
+            if (playerX < 0) playerX = 0;
+            if (playerX > gameArea.clientWidth - playerWidth) playerX = gameArea.clientWidth - playerWidth;
+            
+            // Check if fallen off
+            if (playerY > gameArea.clientHeight) {
+                loseLife();
+            }
+            
+            // Reset ground state
+            playerOnGround = false;
+            
+            // Update position on screen
+            updatePlayerPosition();
+        }
+        
+        function updatePlayerPosition() {
+            player.style.left = `${playerX}px`;
+            player.style.top = `${playerY}px`;
+        }
+        
+        function checkCollisions() {
+            // Check platform collisions
+            platforms.forEach(platform => {
+                if (playerX < platform.x + platform.width &&
+                    playerX + playerWidth > platform.x &&
+                    playerY < platform.y + platform.height &&
+                    playerY + playerHeight > platform.y) {
+                    
+                    // Landing on top of platform
+                    if (playerSpeedY > 0 && playerY + playerHeight - playerSpeedY <= platform.y) {
+                        playerY = platform.y - playerHeight;
+                        playerSpeedY = 0;
+                        playerOnGround = true;
+                    }
+                    // Hitting bottom of platform
+                    else if (playerSpeedY < 0 && playerY >= platform.y + platform.height) {
+                        playerY = platform.y + platform.height;
+                        playerSpeedY = 0;
+                    }
+                    // Left collision
+                    else if (playerSpeedX > 0 && playerX + playerWidth - playerSpeedX <= platform.x) {
+                        playerX = platform.x - playerWidth;
+                        playerSpeedX = 0;
+                    }
+                    // Right collision
+                    else if (playerSpeedX < 0 && playerX >= platform.x + platform.width) {
+                        playerX = platform.x + platform.width;
+                        playerSpeedX = 0;
+                    }
+                }
+            });
+            
+            // Check coin collisions
+            coinsArray.forEach(coin => {
+                if (!coin.collected &&
+                    playerX < coin.x + coin.width &&
+                    playerX + playerWidth > coin.x &&
+                    playerY < coin.y + coin.height &&
+                    playerY + playerHeight > coin.y) {
+                    
+                    collectCoin(coin);
+                }
+            });
+            
+            // Check concept collisions
+            conceptsArray.forEach(concept => {
+                if (!concept.collected &&
+                    playerX < concept.x + concept.width &&
+                    playerX + playerWidth > concept.x &&
+                    playerY < concept.y + concept.height &&
+                    playerY + playerHeight > concept.y) {
+                    
+                    collectConcept(concept);
+                }
+            });
+        }
+        
+        function collectCoin(coin) {
+            // Mark as collected
+            coin.collected = true;
+            coin.element.style.display = 'none';
+            
+            // Update score
+            coins++;
+            coinCounter.textContent = coins;
+        }
+        
+        function collectConcept(concept) {
+            // Mark as collected
+            concept.collected = true;
+            concept.element.style.display = 'none';
+            
+            // Update score
+            conceptsCollected++;
+            conceptCounter.textContent = conceptsCollected;
+            
+            // Show concept info
+            const conceptData = accountingConcepts[concept.conceptId];
+            conceptTitle.textContent = conceptData.title;
+            conceptDescription.textContent = conceptData.description;
+            conceptPanel.classList.remove('hidden');
+        }
+        
+        function loseLife() {
+            lives--;
+            livesCounter.textContent = lives;
+            
+            if (lives <= 0) {
+                gameOver();
+                return;
+            }
+            
+            // Reset player position
+            playerX = 50;
+            playerY = 50;
+            playerSpeedX = 0;
+            playerSpeedY = 0;
+        }
+        
+        function gameOver() {
+            gameRunning = false;
+            cancelAnimationFrame(animationId);
+            
+            // Update final stats
+            finalCoins.textContent = coins;
+            finalConcepts.textContent = conceptsCollected;
+            
+            // Show game over modal
+            gameOverModal.style.display = 'flex';
+        }
+        
+        function winGame() {
+            gameRunning = false;
+            cancelAnimationFrame(animationId);
+            
+            // Update win stats
+            winCoins.textContent = coins;
+            winConcepts.textContent = conceptsCollected;
+            
+            // Show win modal
+            winModal.style.display = 'flex';
+        }
+        
+        function restartGame() {
+            // Hide modals
+            gameOverModal.style.display = 'none';
+            winModal.style.display = 'none';
+            
+            // Hide concept panel
+            conceptPanel.classList.add('hidden');
+            
+            // Start a new game
+            startGame();
+        }
+        
+        // Initialize the game
+        initGame();
+    </script>
+</body>
+</html>
